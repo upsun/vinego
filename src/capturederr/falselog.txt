@@ -1,0 +1,5 @@
+falselog opened
+capturederr running on bad
+capturederr running on nocaptureok
+assignment to err at /tmp/analysistest723709083/src/nocaptureok/noCaptureOk.go:11:2, decl found at /tmp/analysistest723709083/src/nocaptureok/noCaptureOk.go:10:6
+capturederr running on ok
