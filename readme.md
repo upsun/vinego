@@ -124,7 +124,7 @@ The linters are built as a single `.so` with control over individual checks via 
    
    (Distributed this way because `golangci-lint` needs linters to be built with the same dependency versions and the easiest way to guarantee that is to build them together)
 
-   You can build the Docker container yourself with `docker build -t vinego .` at the root of this repo.
+   You can build the Docker container yourself with `docker build --tag vinego src` at the root of this repo.
 
    Alternatively, you can build just the plugin `.so` - see the `Dockerfile` for details (it's a straightforward Go `.so` build).
 
@@ -134,13 +134,13 @@ The linters are built as a single `.so` with control over individual checks via 
       enable:
          - vinego
 
-      linters-settings:
-         custom:
-            vinego:
-               path: "/custom_linters/vinego.so"
-               description: "Vinego linters"
+   linters-settings:
+      custom:
+         vinego:
+            path: "/custom_linters/vinego.so"
+            description: "Vinego linters"
    ```
 
 1. For optional linters, enable them in a `.vinego.yaml` in the same directory as `.golangci.json`. For details see the per-linter explanations above.
 
-1. Run the linters with `docker run --rm -t -v $PWD:/mnt -w /mnt vinego /bin/golangci-lint run -v`.  You should see `vinego` listed in the output.
+1. Run the linters with `docker run --rm --volume $PWD:/mnt --workdir /mnt vinego /bin/golangci-lint run --verbose`.  You should see `vinego` listed in the output.

@@ -1,5 +1,5 @@
 FROM golang:1.21-bullseye
-ADD src /src
+ADD . /src
 WORKDIR /src
 ENV GOPATH=/install
 RUN mkdir -p $GOPATH

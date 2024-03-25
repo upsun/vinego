@@ -1,0 +1,10 @@
+linters:
+  enable:
+    - vinego
+
+linters-settings:
+  custom:
+    vinego:
+      path: "/custom_linters/vinego.so"
+      description: "Vinego linters"
+
