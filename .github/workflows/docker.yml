@@ -23,4 +23,4 @@ jobs:
       - uses: docker/build-push-action@v5
         with:
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.dockermeta.outputs.tags }}
