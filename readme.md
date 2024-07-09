@@ -124,7 +124,7 @@ The linters are built as a single `.so` with control over individual checks via 
 
 # Usage
 
-1. We provide a pre-made Docker batteries-included image for CI and development environments: `https://ghcr.io/platformsh/vinego:latest`
+1. We provide a pre-made Docker batteries-included image for CI and development environments: `ghcr.io/upsun/vinego:latest`
 
    It includes
 
