@@ -1,0 +1,11 @@
+name: pr
+on:
+  push:
+jobs:
+  main:
+    runs-on: ghcr.io/upsun/vinego
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+        cd src
+        ./test.sh

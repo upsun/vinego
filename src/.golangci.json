@@ -1,0 +1,125 @@
+{
+    "linters": {
+        "enable": [
+            "misspell",
+            "staticcheck",
+            "errcheck",
+            "gosimple",
+            "gocritic",
+            "govet",
+            "vinego",
+            "gci",
+            "importas",
+            "ineffassign",
+            "unused",
+            "unparam"
+        ],
+        "disable-all": true
+    },
+    "linters-settings": {
+        "gocritic": {
+            "disable-all": true,
+            "enable": [
+                "appendAssign",
+                "argOrder",
+                "assignOp",
+                "badCall",
+                "badCond",
+                "captLocal",
+                "caseOrder",
+                "codegenComment",
+                "commentFormatting",
+                "defaultCaseOrder",
+                "deprecatedComment",
+                "dupArg",
+                "dupBranchBody",
+                "dupCase",
+                "dupSubExpr",
+                "elseif",
+                "exitAfterDefer",
+                "flagDeref",
+                "flagName",
+                "ifElseChain",
+                "mapKey",
+                "newDeref",
+                "offBy1",
+                "regexpMust",
+                "singleCaseSwitch",
+                "sloppyLen",
+                "sloppyTypeAssert",
+                "switchTrue",
+                "typeSwitchVar",
+                "underef",
+                "unlambda",
+                "unslice",
+                "valSwap",
+                "wrapperFunc"
+            ]
+        },
+        "govet": {
+            "disable-all": true,
+            "enable": [
+                "appends",
+                "asmdecl",
+                "assign",
+                "atomic",
+                "atomicalign",
+                "bools",
+                "buildtag",
+                "cgocall",
+                "composites",
+                "copylocks",
+                "deepequalerrors",
+                "defers",
+                "directive",
+                "errorsas",
+                "fieldalignment",
+                "findcall",
+                "framepointer",
+                "httpresponse",
+                "ifaceassert",
+                "loopclosure",
+                "lostcancel",
+                "nilfunc",
+                "nilness",
+                "printf",
+                "reflectvaluecompare",
+                "shadow",
+                "shift",
+                "sigchanyzer",
+                "slog",
+                "sortslice",
+                "stdmethods",
+                "stringintconv",
+                "structtag",
+                "testinggoroutine",
+                "tests",
+                "unmarshal",
+                "unreachable",
+                "unsafeptr",
+                "unusedresult",
+                "unusedwrite"
+            ]
+        },
+        "staticcheck": {
+            "checks": [
+                "SA4005",
+                "SA4006",
+                "SA4010"
+            ]
+        },
+        "gci": {
+            "sections": [
+                "standard",
+                "default",
+                "prefix(github.com/upsun/vinego"
+            ]
+        },
+        "custom": {
+            "vinego": {
+                "path": "/custom_linters/vinego.so",
+                "description": "Vinego lints"
+            }
+        }
+    }
+}
