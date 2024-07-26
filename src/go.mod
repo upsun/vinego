@@ -1,6 +1,6 @@
 module github.com/platformsh/vinego
 
-go 1.21
+go 1.22
 
 require (
 	golang.org/x/tools v0.9.3
