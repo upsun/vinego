@@ -116,6 +116,9 @@ func EvalVarDecl(c *Context, valSpec *ast.ValueSpec) {
 }
 
 func EvalVarDeclBlock(c *Context, d *ast.GenDecl) {
+	if d.Tok == token.CONST {
+		return
+	}
 	for _, spec := range d.Specs {
 		valSpec, isValSpec := spec.(*ast.ValueSpec)
 		if !isValSpec {
