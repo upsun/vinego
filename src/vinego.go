@@ -6,11 +6,11 @@ import (
 	"golang.org/x/tools/go/analysis"
 	"gopkg.in/yaml.v2"
 
-	"github.com/platformsh/vinego/allfields"
-	"github.com/platformsh/vinego/capturederr"
-	"github.com/platformsh/vinego/explicitcast"
-	"github.com/platformsh/vinego/loopvariableref"
-	"github.com/platformsh/vinego/varinit"
+	"github.com/upsun/vinego/src/allfields"
+	"github.com/upsun/vinego/src/capturederr"
+	"github.com/upsun/vinego/src/explicitcast"
+	"github.com/upsun/vinego/src/loopvariableref"
+	"github.com/upsun/vinego/src/varinit"
 )
 
 type analyzerPlugin struct{}

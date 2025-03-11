@@ -19,7 +19,7 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 	"golang.org/x/tools/go/types/typeutil"
 
-	"github.com/platformsh/vinego/semivendor/gocfg/cfg"
+	"github.com/upsun/vinego/src/semivendor/gocfg/cfg"
 )
 
 var Analyzer = &analysis.Analyzer{

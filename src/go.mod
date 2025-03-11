@@ -1,4 +1,4 @@
-module github.com/platformsh/vinego
+module github.com/upsun/vinego/src
 
 go 1.21
 

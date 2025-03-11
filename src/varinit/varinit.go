@@ -9,9 +9,9 @@ import (
 
 	"golang.org/x/tools/go/analysis"
 
-	"github.com/platformsh/vinego/semivendor/gocfg/cfg"
-	"github.com/platformsh/vinego/semivendor/gocfg/ctrlflow"
-	"github.com/platformsh/vinego/utils"
+	"github.com/upsun/vinego/src/semivendor/gocfg/cfg"
+	"github.com/upsun/vinego/src/semivendor/gocfg/ctrlflow"
+	"github.com/upsun/vinego/src/utils"
 )
 
 type BranchId token.Pos
