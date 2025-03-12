@@ -1,4 +1,0 @@
-enable_varinit: true
-enable_explicitcast: true
-enable_loopvariableref: true
-enable_capturederr: true

@@ -3,7 +3,7 @@ package testutils
 import (
 	"fmt"
 	"io/fs"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -14,11 +14,14 @@ import (
 
 func RunTests(t *testing.T, analyzer *analysis.Analyzer) {
 	root := "testdata"
-	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
+	err := filepath.Walk(root, func(path string, info fs.FileInfo, err0 error) error {
+		if err0 != nil {
+			return err0
+		}
 		if !strings.HasSuffix(path, ".go") {
 			return nil
 		}
-		contents, err := ioutil.ReadFile(path)
+		contents, err := os.ReadFile(path)
 		if err != nil {
 			t.Errorf("failed to load test case %s: %s", path, err)
 			return nil
@@ -28,10 +31,8 @@ func RunTests(t *testing.T, analyzer *analysis.Analyzer) {
 			relPath: string(contents),
 		})
 		if err != nil {
-			if err != nil {
-				t.Errorf("failed to prep temp test dir: %s", err)
-				return nil
-			}
+			t.Errorf("failed to prep temp test dir: %s", err)
+			return nil
 		}
 		defer cleanup()
 		fmt.Printf("========= at %s\n", path)

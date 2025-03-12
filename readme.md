@@ -2,7 +2,7 @@
 
 Vinego is a new set of linters built on the Go `analysis.Analyzer` framework. Many of the linters focus on increasing strictness around variable initialization and type safety. They fall somewhere in-between "drop these into your codebase with no changes" and "rewrite all your code to conform to weird new language-extra conventions" in terms of invasiveness.
 
-The linters are built as a single analyzer with control over individual checks via a `.vinego.yaml` file. Methods for using this with `golangci-lint` are provided, but you should be able to use them with other analyzer-based frameworks as well.
+Each linter is an `analysis.Analyzer` and they're aggregated as a `golangci-lint` plugin. Individual non-opt-in linters can be enabled via the `golangci-lint` settings.  The analyzers should work with any `analysis.Analyzer` framework though.
 
 # Analyzers
 
@@ -66,39 +66,6 @@ The linters are built as a single analyzer with control over individual checks v
 
   would produce an error saying that `24` is being implicitly cast to `time.Duration`.
 
-- `loopvariableref`
-
-  Enabled with `enable_loopvariableref: true` in `.vinego.yaml`.
-
-  Checks that loop variables are not used outside of a single iteration, either via reference/pointer or function capture.
-
-  For example:
-
-  ```go
-  for _, x := range myList {
-     go func() {
-        print(x)
-     }
-  }
-  ```
-
-  would produce an error saying that the capture of `x` here is risky.
-
-  The simple work around is to explicitly declare a local variable like:
-
-  ```go
-  for _, x := range myList {
-     x := x
-     go func() {
-        print(x)
-     }
-  }
-  ```
-
-  to make sure the captured data is unique.
-
-  This will be obsolete after [Go 1.22](https://go.dev/blog/loopvar-preview).
-
 - `capturederr`
 
   Enabled with `enable_capturederr: true` in `.vinego.yaml`.
@@ -131,8 +98,7 @@ The linters are built as a single analyzer with control over individual checks v
    It includes
 
    - Go
-   - Vinego
-   - `golangci-lint`
+   - `golangci-lint` built with `vinego` included as a `module`-type plugin
    - `gci`
    - `goimports`
    - `dlv`
@@ -148,15 +114,15 @@ The linters are built as a single analyzer with control over individual checks v
    linters:
       enable:
          - vinego
-
    linters-settings:
       custom:
          vinego:
-            path: "/custom_linters/vinego.so"
-            description: "Vinego linters"
+            type: "module"
+            settings:
+               enable_varinit: true
+               enable_explicitcast: true
+               enable_capturederr: true
    ```
-
-1. For optional linters, enable them in a `.vinego.yaml` in the same directory as `.golangci.json`. For details see the per-linter explanations above.
 
 1. Run the linters with `docker run --rm --volume $PWD:/mnt --workdir /mnt vinego /bin/golangci-lint run --verbose`. You should see `vinego` listed in the output.
 
@@ -189,6 +155,10 @@ If you need an image with different tools or want to use the linter in some othe
      custom:
        vinego:
          type: "module"
+         settings:
+           enable_varinit: true
+           enable_explicitcast: true
+           enable_capturederr: true
    linters:
      enable:
        - vinego

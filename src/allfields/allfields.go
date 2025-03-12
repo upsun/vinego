@@ -16,7 +16,7 @@ func New() *analysis.Analyzer {
 		Name:      "allfields",
 		Doc:       "_",
 		FactTypes: []analysis.Fact{new(utils.ChecksFact)},
-		Run: func(p *analysis.Pass) (interface{}, error) {
+		Run: func(p *analysis.Pass) (any, error) {
 			utils.ScanTypeTags(p)
 			for _, file := range p.Files {
 				ast.Inspect(file, func(n ast.Node) bool {
@@ -28,8 +28,15 @@ func New() *analysis.Analyzer {
 					if litType == nil {
 						return true
 					}
-					litType1, isNamed := litType.(*types.Named)
-					if !isNamed {
+					var litType1 *types.Named = nil
+					if litType2, isPointer := litType.(*types.Pointer); isPointer {
+						if litType3, isNamed := litType2.Elem().(*types.Named); isNamed {
+							litType1 = litType3
+						}
+					} else if litType2, isNamed := litType.(*types.Named); isNamed {
+						litType1 = litType2
+					}
+					if litType1 == nil {
 						return true
 					}
 					enabledChecks := new(utils.ChecksFact)
@@ -39,7 +46,7 @@ func New() *analysis.Analyzer {
 					}
 
 					if (*enabledChecks)["allfields"] {
-						structType, isStruct := litType.Underlying().(*types.Struct)
+						structType, isStruct := litType1.Underlying().(*types.Struct)
 						if !isStruct {
 							p.Report(analysis.Diagnostic{
 								Pos:      n.Pos(),
