@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/analysis/passes/ctrlflow"
+	"golang.org/x/tools/go/cfg"
 
-	"github.com/platformsh/vinego/semivendor/gocfg/cfg"
-	"github.com/platformsh/vinego/semivendor/gocfg/ctrlflow"
-	"github.com/platformsh/vinego/utils"
+	"github.com/upsun/vinego/src/utils"
 )
 
 type BranchId token.Pos
@@ -156,15 +156,22 @@ func CheckUse(c *Context, e *ast.Ident) {
 func EvalExpr(c *Context, n ast.Expr) {
 	switch e := n.(type) {
 	case *ast.CallExpr:
-		switch f := e.Fun.(type) {
-		case *ast.FuncLit:
-			for _, arg := range e.Args {
+		for _, arg := range e.Args {
+			switch f := arg.(type) {
+			case *ast.FuncLit:
+				// Assume closures passed to a function as arguments will
+				// be called before the function returns.  This will produce
+				// some false negatives but hopefully such cases are rare.
+				resScope := EvalFunc(c.p, c.cfgs, c.cfgs.FuncLit(f), f.Type, []*Scope{c.scope}, c.reported)
+				c.scope.Uninitialized = resScope.Uninitialized
+			default:
 				EvalExpr(c, arg)
 			}
+		}
+		switch f := e.Fun.(type) {
+		case *ast.FuncLit:
 			resScope := EvalFunc(c.p, c.cfgs, c.cfgs.FuncLit(f), f.Type, []*Scope{c.scope}, c.reported)
 			c.scope.Uninitialized = resScope.Uninitialized
-		default:
-			Recurse(c, e)
 		}
 	case *ast.UnaryExpr:
 		{
@@ -216,10 +223,30 @@ func EvalStmt(c *Context, n ast.Stmt) {
 		}
 		lit, isLit := s.Call.Fun.(*ast.FuncLit)
 		if isLit {
+			// Evaluate the goroutine function as if the captured variables have the
+			// initialization state at the time of forking.  Don't allow initializations
+			// within the goroutine to affect the outer flow though, since the actual
+			// execution could happen whenever.
 			EvalFunc(c.p, c.cfgs, c.cfgs.FuncLit(lit), lit.Type, nil, c.reported)
 		} else {
 			EvalExpr(c, s.Call)
 		}
+	case *ast.DeferStmt:
+		for _, arg := range s.Call.Args {
+			EvalExpr(c, arg)
+		}
+		lit, isLit := s.Call.Fun.(*ast.FuncLit)
+		if isLit {
+			// Evaluate the goroutine function as if the captured variables have the
+			// initialization state at the time of deferring.  Don't allow initializations
+			// within the function to affect the outer flow though, since the actual
+			// execution could happen whenever.
+			EvalFunc(c.p, c.cfgs, c.cfgs.FuncLit(lit), lit.Type, nil, c.reported)
+		} else {
+			EvalExpr(c, s.Call)
+		}
+	case *ast.ExprStmt:
+		EvalExpr(c, s.X)
 	default:
 		Recurse(c, s)
 	}
@@ -277,7 +304,7 @@ func MergeScopes(block *cfg.Block, inputs []*Scope) *Scope {
 		}
 	} else {
 		return &Scope{
-			Location:      BranchId(block.Pos),
+			Location:      BranchId(block.Stmt.Pos()),
 			Comment:       BlockComment(block),
 			Uninitialized: uninitialized,
 		}

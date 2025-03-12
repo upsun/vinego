@@ -7,8 +7,8 @@ func main() {
 	var x int
 	switch produce() {
 	case 4:
-	default:
 		x = 7
+	default:
 	}
 	consume(x) // want "x"
 }

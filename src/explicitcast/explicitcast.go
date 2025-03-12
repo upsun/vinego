@@ -9,7 +9,7 @@ import (
 
 	"golang.org/x/tools/go/analysis"
 
-	"github.com/platformsh/vinego/utils"
+	"github.com/upsun/vinego/src/utils"
 )
 
 func wantSet(names ...string) map[string]bool {

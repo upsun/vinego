@@ -1,10 +1,11 @@
-linters:
-  enable:
-    - vinego
-
 linters-settings:
   custom:
     vinego:
-      path: "/custom_linters/vinego.so"
-      description: "Vinego linters"
-
+      type: "module"
+      settings:
+        enable_varinit: true
+        enable_explicitcast: true
+        enable_capturederr: true
+linters:
+  enable:
+    - vinego

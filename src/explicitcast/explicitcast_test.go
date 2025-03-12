@@ -3,7 +3,7 @@ package explicitcast
 import (
 	"testing"
 
-	"github.com/platformsh/vinego/testutils"
+	"github.com/upsun/vinego/src/testutils"
 )
 
 func TestAnalyzers(t *testing.T) {
