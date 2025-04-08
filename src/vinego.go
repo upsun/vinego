@@ -39,7 +39,7 @@ func (f *Vinego) GetLoadMode() string {
 	return register.LoadModeTypesInfo
 }
 
-func New(settings any) (register.LinterPlugin, error) {
+func NewPlugin(settings any) (register.LinterPlugin, error) {
 	s, err := register.DecodeSettings[Settings](settings)
 	if err != nil {
 		return nil, err
@@ -47,6 +47,15 @@ func New(settings any) (register.LinterPlugin, error) {
 	return &Vinego{settings: s}, nil
 }
 
+func New(conf any) ([]*analysis.Analyzer, error) {
+	return []*analysis.Analyzer{
+		allfields.New(),
+		varinit.New(),
+		explicitcast.New(),
+		capturederr.New(),
+	}, nil
+}
+
 func init() {
-	register.Plugin("vinego", New)
+	register.Plugin("vinego", NewPlugin)
 }
