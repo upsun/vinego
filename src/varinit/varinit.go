@@ -317,6 +317,93 @@ func BlockComment(b *cfg.Block) string {
 	return extractCommentRegexp.FindStringSubmatch(b.String())[1]
 }
 
+func EvalFuncsDepWalk(
+	// Inputs...
+	p *analysis.Pass,
+	cfgs *ctrlflow.CFGs,
+	spec *ast.FuncType,
+	inputs []*Scope,
+	reported map[VarId]bool,
+	deps map[*cfg.Block][]*cfg.Block,
+
+	// Outputs...
+	outputs []*Scope,
+	// blocks with no explicit returns (i.e. "return" not "return 4")
+	emptyReturnOutputs []*Scope,
+	hasNamedReturns *bool,
+	blockScopes map[*cfg.Block]*Scope,
+
+	// Target...
+	b *cfg.Block,
+) *Scope {
+	// Placeholder for preventing reprocessing for diamond deps
+	blockScopes[b] = nil
+
+	// # Process all deps
+	var depScopes []*Scope
+	if len(deps[b]) == 0 {
+		depScopes = inputs
+	} else {
+		depScopes = []*Scope{}
+		for _, dep := range deps[b] {
+			depScope, seen := blockScopes[dep]
+			if !seen {
+				depScope = EvalFuncsDepWalk(
+					p,
+					cfgs,
+					spec,
+					inputs,
+					reported,
+					deps,
+					outputs,
+					emptyReturnOutputs,
+					hasNamedReturns,
+					blockScopes,
+					dep,
+				)
+			}
+			if depScope == nil {
+				// Cycle, ex: for/range loops dep back to end of loop; skip
+				continue
+			}
+			utils.Append(&depScopes, depScope)
+		}
+	}
+	scope := MergeScopes(b, depScopes)
+
+	// For first block, also add named returns as vars
+	if b.Index == 0 {
+		for _, name := range utils.NamedReturns(spec) {
+			*hasNamedReturns = true
+			scope.NewDecl(p, name)
+		}
+	}
+
+	// Process elements
+	c := &Context{
+		p:        p,
+		cfgs:     cfgs,
+		scope:    scope,
+		reported: reported,
+	}
+	for _, e0 := range b.Nodes {
+		switch e := e0.(type) {
+		case ast.Stmt:
+			EvalStmt(c, e)
+		case ast.Expr:
+			EvalExpr(c, e)
+		case *ast.ValueSpec:
+			EvalVarDecl(c, e)
+		default:
+			panic("")
+		}
+	}
+
+	// Store final scope state, return
+	blockScopes[b] = scope
+	return scope
+}
+
 func EvalFunc(
 	p *analysis.Pass,
 	cfgs *ctrlflow.CFGs,
@@ -325,30 +412,12 @@ func EvalFunc(
 	inputs []*Scope,
 	reported map[VarId]bool,
 ) *Scope {
-	// Preprocessing 1
+	// Calculate dependencies from sucessors
 	deps := map[*cfg.Block][]*cfg.Block{}
-	unordered := map[int32]*cfg.Block{}
 	for _, b := range flow.Blocks {
-		// Skip unreachable blocks... they might not be fully initialized
 		if !b.Live {
 			continue
 		}
-
-		// Break for loop loopiness, iteration 2+ has same analysis as 1st
-		// so we can skip the back-link
-		if b.Kind == cfg.KindForLoop {
-			newSuccs := []*cfg.Block{}
-			for _, succ := range b.Succs {
-				if succ.Kind == cfg.KindForBody {
-					continue
-				}
-				newSuccs = append(newSuccs, succ)
-			}
-			b.Succs = newSuccs
-		}
-
-		// Build unordered map
-		unordered[b.Index] = b
 
 		// Record dependencies from successors
 		for _, s := range b.Succs {
@@ -362,91 +431,38 @@ func EvalFunc(
 		}
 	}
 
-	// Do a dependency ordering of the live blocks
-	orderedBlocks := []*cfg.Block{}
-	for len(unordered) > 0 {
-		startLen := len(unordered)
-		keys := []int32{}
-		for k := range unordered {
-			keys = append(keys, k)
-		}
-	NextKey:
-		for _, i := range keys {
-			b := unordered[i]
-			for _, dep := range deps[b] {
-				if unordered[dep.Index] != nil {
-					continue NextKey
-				}
-			}
-			orderedBlocks = append(orderedBlocks, b)
-			delete(unordered, i)
-		}
-		if startLen == len(unordered) {
-			panic("Cycles in flow graph or bad logic!")
-		}
-	}
-
-	// Outputs is the end scope for any block that the function exits from
+	// Analyze blocks in dep order, starting with all returns
 	outputs := []*Scope{}
 	emptyReturnOutputs := []*Scope{} // blocks with no explicit returns (i.e. "return" not "return 4")
-
 	hasNamedReturns := false
 	blockScopes := map[*cfg.Block]*Scope{}
-	for bI, b := range orderedBlocks {
-		// Aggregate scopes from dependency blocks
-		var depScopes []*Scope
-		if len(deps[b]) == 0 {
-			depScopes = inputs
-		} else {
-			depScopes = []*Scope{}
-			for _, dep := range deps[b] {
-				depScope := blockScopes[dep]
-				if depScope == nil {
-					continue
-				}
-				utils.Append(&depScopes, blockScopes[dep])
-			}
+	for _, b := range flow.Blocks {
+		if !b.Live {
+			continue
 		}
-		scope := MergeScopes(b, depScopes)
-
-		// For first block, also add named returns as vars
-		if bI == 0 {
-			for _, name := range utils.NamedReturns(spec) {
-				hasNamedReturns = true
-				scope.NewDecl(p, name)
-			}
+		if len(b.Succs) > 0 {
+			continue
 		}
 
-		// Process elements
-		c := &Context{
-			p:        p,
-			cfgs:     cfgs,
-			scope:    scope,
-			reported: reported,
-		}
-		for _, e0 := range b.Nodes {
-			switch e := e0.(type) {
-			case ast.Stmt:
-				EvalStmt(c, e)
-			case ast.Expr:
-				EvalExpr(c, e)
-			case *ast.ValueSpec:
-				EvalVarDecl(c, e)
-			default:
-				panic("")
-			}
-		}
-
-		// Store results
-		blockScopes[b] = scope
-		if len(b.Succs) == 0 {
-			utils.Append(&outputs, scope)
-			if len(b.Nodes) > 0 {
-				switch l := utils.Last(b.Nodes).(type) {
-				case *ast.ReturnStmt:
-					if len(l.Results) == 0 {
-						utils.Append(&emptyReturnOutputs, scope)
-					}
+		scope := EvalFuncsDepWalk(
+			p,
+			cfgs,
+			spec,
+			inputs,
+			reported,
+			deps,
+			outputs,
+			emptyReturnOutputs,
+			&hasNamedReturns,
+			blockScopes,
+			b,
+		)
+		utils.Append(&outputs, scope)
+		if len(b.Nodes) > 0 {
+			switch l := utils.Last(b.Nodes).(type) {
+			case *ast.ReturnStmt:
+				if len(l.Results) == 0 {
+					utils.Append(&emptyReturnOutputs, scope)
 				}
 			}
 		}
