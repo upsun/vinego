@@ -329,12 +329,13 @@ func EvalFunc(
 	deps := map[*cfg.Block][]*cfg.Block{}
 	unordered := map[int32]*cfg.Block{}
 	for _, b := range flow.Blocks {
-		// Skip unreachable blocks... because they're unreachable
+		// Skip unreachable blocks... they might not be fully initialized
 		if !b.Live {
 			continue
 		}
 
-		// Break for loop loopiness, treat them like ifs since that's how they decompose
+		// Break for loop loopiness, iteration 2+ has same analysis as 1st
+		// so we can skip the back-link
 		if b.Kind == cfg.KindForLoop {
 			newSuccs := []*cfg.Block{}
 			for _, succ := range b.Succs {
