@@ -317,17 +317,6 @@ func BlockComment(b *cfg.Block) string {
 	return extractCommentRegexp.FindStringSubmatch(b.String())[1]
 }
 
-func CalcDepth(depths map[*cfg.Block]int, b *cfg.Block, depth int) {
-	_, hasDepth := depths[b]
-	if hasDepth {
-		return
-	}
-	depths[b] = depth
-	for _, s := range b.Succs {
-		CalcDepth(depths, s, depth+1)
-	}
-}
-
 func EvalFunc(
 	p *analysis.Pass,
 	cfgs *ctrlflow.CFGs,
@@ -336,14 +325,31 @@ func EvalFunc(
 	inputs []*Scope,
 	reported map[VarId]bool,
 ) *Scope {
-	// Calculate block dependencies and which blocks are actually reachable
+	// Preprocessing 1
 	deps := map[*cfg.Block][]*cfg.Block{}
-	live := []*cfg.Block{}
+	unordered := map[int32]*cfg.Block{}
 	for _, b := range flow.Blocks {
+		// Skip unreachable blocks... because they're unreachable
 		if !b.Live {
 			continue
 		}
-		utils.Append(&live, b)
+
+		// Break for loop loopiness, treat them like ifs since that's how they decompose
+		if b.Kind == cfg.KindForLoop {
+			newSuccs := []*cfg.Block{}
+			for _, succ := range b.Succs {
+				if succ.Kind == cfg.KindForBody {
+					continue
+				}
+				newSuccs = append(newSuccs, succ)
+			}
+			b.Succs = newSuccs
+		}
+
+		// Build unordered map
+		unordered[b.Index] = b
+
+		// Record dependencies from successors
 		for _, s := range b.Succs {
 			if !s.Live {
 				continue
@@ -356,35 +362,26 @@ func EvalFunc(
 	}
 
 	// Do a dependency ordering of the live blocks
-	depths := map[*cfg.Block]int{}
-	CalcDepth(depths, flow.Blocks[0], 0)
-	done := map[*cfg.Block]bool{}
 	orderedBlocks := []*cfg.Block{}
-	remaining := live
-	for len(remaining) > 0 {
-		i := 0
-		for {
-			if i >= len(remaining) {
-				break
-			}
-			b := remaining[i]
-			depsDone := true
+	for len(unordered) > 0 {
+		startLen := len(unordered)
+		keys := []int32{}
+		for k := range unordered {
+			keys = append(keys, k)
+		}
+	NextKey:
+		for _, i := range keys {
+			b := unordered[i]
 			for _, dep := range deps[b] {
-				if depths[dep] > depths[b] {
-					// Loop (for loop)
-					continue
-				}
-				if !done[dep] {
-					depsDone = false
+				if unordered[dep.Index] != nil {
+					continue NextKey
 				}
 			}
-			if !depsDone {
-				i += 1
-				continue
-			}
-			utils.Append(&orderedBlocks, b)
-			utils.Remove(&remaining, i, 1)
-			done[b] = true
+			orderedBlocks = append(orderedBlocks, b)
+			delete(unordered, i)
+		}
+		if startLen == len(unordered) {
+			panic("Cycles in flow graph or bad logic!")
 		}
 	}
 
