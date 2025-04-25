@@ -7,5 +7,5 @@ import (
 )
 
 func TestAnalyzers(t *testing.T) {
-	testutils.RunTests(t, New())
+	testutils.RunTests(t, New(), nil)
 }
