@@ -4,7 +4,7 @@ WORKDIR /src
 ENV GOPATH=/install
 RUN mkdir -p $GOPATH
 RUN cd /src
-RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.6
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.1.5
 RUN $GOPATH/bin/golangci-lint custom -v
 RUN ./custom-gcl run
 RUN go test ./...
