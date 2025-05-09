@@ -363,10 +363,7 @@ func EvalFunc(
 	remaining := live
 	for len(remaining) > 0 {
 		i := 0
-		for {
-			if i >= len(remaining) {
-				break
-			}
+		for i < len(remaining) {
 			b := remaining[i]
 			depsDone := true
 			for _, dep := range deps[b] {
