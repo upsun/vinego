@@ -1,11 +1,30 @@
-linters-settings:
-  custom:
-    vinego:
-      type: "module"
-      settings:
-        enable_varinit: true
-        enable_explicitcast: true
-        enable_capturederr: true
+version: "2"
 linters:
   enable:
     - vinego
+  settings:
+    custom:
+      vinego:
+        type: module
+        settings:
+          enable_capturederr: true
+          enable_explicitcast: true
+          enable_varinit: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
