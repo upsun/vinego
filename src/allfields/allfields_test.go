@@ -8,5 +8,5 @@ import (
 
 func TestAnalyzers(t *testing.T) {
 	allFieldsAnalyzer := New()
-	testutils.RunTests(t, allFieldsAnalyzer)
+	testutils.RunTests(t, allFieldsAnalyzer, nil)
 }

@@ -8,17 +8,21 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/upsun/vinego/src/utils"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/analysistest"
 )
 
-func RunTests(t *testing.T, analyzer *analysis.Analyzer) {
+func RunTests(t *testing.T, analyzer *analysis.Analyzer, filter map[string]bool) {
 	root := "testdata"
 	err := filepath.Walk(root, func(path string, info fs.FileInfo, err0 error) error {
 		if err0 != nil {
 			return err0
 		}
 		if !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+		if filter != nil && !filter[utils.Last(strings.Split(path, "/"))] {
 			return nil
 		}
 		contents, err := os.ReadFile(path)
