@@ -1,6 +1,6 @@
 module github.com/upsun/vinego/src
 
-go 1.24
+go 1.25
 
 require golang.org/x/tools v0.31.0
 
