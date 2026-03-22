@@ -2,10 +2,12 @@ package utils
 
 import (
 	"go/ast"
+	"maps"
 )
 
+//go:fix inline
 func P[V any](v V) *V {
-	return &v
+	return new(v)
 }
 
 func Append[E any](d *[]E, v ...E) {
@@ -35,9 +37,7 @@ func MergeMap[K comparable, V any](
 	dest map[K]V,
 	source map[K]V,
 ) {
-	for k, v := range source {
-		dest[k] = v
-	}
+	maps.Copy(dest, source)
 }
 
 func Last[V any](v []V) V {
