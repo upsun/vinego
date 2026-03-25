@@ -142,7 +142,7 @@ func New() *analysis.Analyzer {
 						if inFunc == nil {
 							t := strings.Builder{}
 							for i, c := range crumbs {
-								t.WriteString(fmt.Sprintf("crumb %d %T %s\n", i, c, p.Fset.Position(c.Pos())))
+								fmt.Fprintf(&t, "crumb %d %T %s\n", i, c, p.Fset.Position(c.Pos()))
 							}
 							panic("ASSERTION!" + p.String() + "\n" + t.String())
 						}
