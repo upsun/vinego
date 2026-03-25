@@ -2,24 +2,11 @@ package utils
 
 import (
 	"go/ast"
+	"maps"
 )
-
-func P[V any](v V) *V {
-	return &v
-}
 
 func Append[E any](d *[]E, v ...E) {
 	*d = append(*d, v...)
-}
-
-func Remove[E any](d *[]E, start int, count int) {
-	*d = append((*d)[:start], (*d)[start+count:]...)
-}
-
-func PopMap[K comparable, V any](m map[K]V, key K) V {
-	out := m[key]
-	delete(m, key)
-	return out
 }
 
 func UpdateMap[K comparable, V any](
@@ -35,18 +22,11 @@ func MergeMap[K comparable, V any](
 	dest map[K]V,
 	source map[K]V,
 ) {
-	for k, v := range source {
-		dest[k] = v
-	}
+	maps.Copy(dest, source)
 }
 
 func Last[V any](v []V) V {
 	return v[len(v)-1]
-}
-
-// ArrAntiSuffix returns all but count last elements
-func ArrAntiSuffix[V any](v []V, count int) []V {
-	return v[:len(v)-count]
 }
 
 type walkPair[S any] struct {

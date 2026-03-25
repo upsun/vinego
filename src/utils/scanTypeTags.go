@@ -26,7 +26,7 @@ func ScanTypeTags(p *analysis.Pass) {
 				return true
 			}
 			enabledChecks := &ChecksFact{}
-			for _, line := range strings.Split(decl.Doc.Text(), "\n") {
+			for line := range strings.SplitSeq(decl.Doc.Text(), "\n") {
 				matches := checkRegexp.FindStringSubmatch(line)
 				if len(matches) >= 2 {
 					(*enabledChecks)[matches[1]] = true

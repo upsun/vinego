@@ -46,7 +46,7 @@ func New() *analysis.Analyzer {
 	return &analysis.Analyzer{
 		Name: "explicitcast",
 		Doc:  "_",
-		Run: func(p *analysis.Pass) (interface{}, error) {
+		Run: func(p *analysis.Pass) (any, error) {
 			checkLit := func(p *analysis.Pass, t types.Type, e ast.Expr) {
 				basicLit, isBasicLit := e.(*ast.BasicLit)
 				if !isBasicLit {
@@ -128,7 +128,7 @@ func New() *analysis.Analyzer {
 						}
 						var inFunc *types.Signature = nil
 					FindFunc:
-						for i := 0; i < len(crumbs); i++ {
+						for i := range crumbs {
 							crumb := crumbs[len(crumbs)-1-i]
 							switch f := crumb.(type) {
 							case *ast.FuncDecl:

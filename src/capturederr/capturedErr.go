@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"slices"
 
 	"golang.org/x/tools/go/analysis"
 
@@ -14,7 +15,7 @@ func New() *analysis.Analyzer {
 	return &analysis.Analyzer{
 		Name: "capturederr",
 		Doc:  "_",
-		Run: func(p *analysis.Pass) (interface{}, error) {
+		Run: func(p *analysis.Pass) (any, error) {
 			for _, file := range p.Files {
 				// check:allfields
 				type Layer struct {
@@ -38,10 +39,8 @@ func New() *analysis.Analyzer {
 								return
 							}
 							layer := utils.Last(stack)
-							for _, v := range layer.Declarations {
-								if decl.Pos() == v {
-									return
-								}
+							if slices.Contains(layer.Declarations, decl.Pos()) {
+								return
 							}
 							p.Report(analysis.Diagnostic{
 								Pos:     ident.Pos(),

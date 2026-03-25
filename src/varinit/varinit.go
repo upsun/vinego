@@ -256,7 +256,6 @@ func MergeScopes(block *cfg.Block, inputs []*Scope) *Scope {
 	uninitialized := map[VarId]*Decl{}
 	for _, depScope := range inputs {
 		for vid, branchDecl := range depScope.Uninitialized {
-			branchDecl := branchDecl
 			utils.UpdateMap(uninitialized, vid, func(v *Decl, exists bool) *Decl {
 				if v == nil {
 					v = &Decl{
@@ -271,9 +270,7 @@ func MergeScopes(block *cfg.Block, inputs []*Scope) *Scope {
 		}
 	}
 	for _, depScope := range inputs {
-		depScope := depScope
 		for vid, branchDecl := range depScope.Uninitialized {
-			branchDecl := branchDecl
 			utils.UpdateMap(uninitialized, vid, func(v *Decl, exists bool) *Decl {
 				if v.Changed {
 					if branchDecl.Changed {
@@ -491,7 +488,7 @@ func New() *analysis.Analyzer {
 		Name:     "varinit",
 		Doc:      "_",
 		Requires: []*analysis.Analyzer{ctrlflow.Analyzer},
-		Run: func(p *analysis.Pass) (interface{}, error) {
+		Run: func(p *analysis.Pass) (any, error) {
 			cfgs := p.ResultOf[ctrlflow.Analyzer].(*ctrlflow.CFGs)
 			reported := map[VarId]bool{}
 			for _, file := range p.Files {
