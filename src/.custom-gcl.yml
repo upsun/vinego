@@ -1,4 +1,4 @@
-version: v2.11.3
+version: v2.12.2
 plugins:
   - module: 'github.com/upsun/vinego/src'
     path: .
