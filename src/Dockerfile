@@ -4,7 +4,7 @@ WORKDIR /src
 ENV GOPATH=/install
 RUN mkdir -p $GOPATH
 RUN cd /src
-RUN go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+RUN go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.0
 RUN $GOPATH/bin/golangci-lint custom -v
 RUN ./custom-gcl run
 RUN go test ./...
