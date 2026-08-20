@@ -15,7 +15,7 @@ import (
 
 func RunTests(t *testing.T, analyzer *analysis.Analyzer, filter map[string]bool) {
 	root := "testdata"
-	err := filepath.Walk(root, func(path string, info fs.FileInfo, err0 error) error {
+	err := filepath.WalkDir(root, func(path string, _ fs.DirEntry, err0 error) error {
 		if err0 != nil {
 			return err0
 		}
