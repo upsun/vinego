@@ -56,7 +56,7 @@ func New() *analysis.Analyzer {
 							return true
 						}
 						remaining := map[string]bool{}
-						for i := 0; i < structType.NumFields(); i++ {
+						for i := range structType.NumFields() {
 							if reflect.StructTag(structType.Tag(i)).Get("optional") == "1" {
 								continue
 							}

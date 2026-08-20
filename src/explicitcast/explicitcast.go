@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
+	"slices"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
@@ -128,8 +129,7 @@ func New() *analysis.Analyzer {
 						}
 						var inFunc *types.Signature = nil
 					FindFunc:
-						for i := range crumbs {
-							crumb := crumbs[len(crumbs)-1-i]
+						for _, crumb := range slices.Backward(crumbs) {
 							switch f := crumb.(type) {
 							case *ast.FuncDecl:
 								inFunc = p.TypesInfo.TypeOf(f.Name).(*types.Signature)
@@ -150,7 +150,7 @@ func New() *analysis.Analyzer {
 							// forward function call multi-return, no implicit casting here
 							break
 						}
-						for i := 0; i < inFunc.Results().Len(); i++ {
+						for i := range inFunc.Results().Len() {
 							retType := inFunc.Results().At(i)
 							checkLit(p, retType.Type(), n.Results[i])
 						}
