@@ -163,3 +163,38 @@ If you need an image with different tools or want to use the linter in some othe
      enable:
        - vinego
    ```
+# Releases
+
+Dependency updates and releases are automated:
+
+1. Dependabot opens weekly grouped pull requests for the Go modules
+   (`src/go.mod`), the `FROM golang:...` base images (`src/Dockerfile`) and the
+   pinned GitHub Actions.
+1. `sync-pins` covers what Dependabot has no manager for: the `golangci-lint`
+   version and the `go` directive. It runs weekly, and again whenever a new base
+   image lands on `main`, raising its pull request the same way.
+1. The `ci` workflow builds `src/Dockerfile` on the branch - building the custom
+   `golangci-lint`, linting this repo with it and running the tests - and its
+   `pins` job fails if the versions below have drifted apart.
+1. `automerge` merges the pull request only once ci has succeeded. A failing
+   build leaves it open instead.
+1. Anything landing on `main` that changes `src/**` cuts the next patch tag, and
+   `ci` publishes `ghcr.io/upsun/vinego` for it.
+
+To cut a larger version by hand, run the `release` workflow from the Actions tab
+and choose `minor` or `major`.
+
+## The version pins
+
+| Pin | Where | Maintained by |
+| --- | --- | --- |
+| Go modules | `src/go.mod`, `src/go.sum` | Dependabot |
+| Base images | `src/Dockerfile` (`FROM golang:X.Y`) | Dependabot |
+| Action versions | `.github/workflows/*.yml` | Dependabot |
+| `golangci-lint` | `src/.custom-gcl.yml` **and** `src/Dockerfile` | `sync-pins` |
+| Go language version | `src/go.mod` (the `go` directive) | `sync-pins` |
+
+The two `golangci-lint` values must always match each other, or
+`golangci-lint custom` bootstraps a binary that disagrees with the plugin, and
+the `go` directive must never ask for more than the base image provides. The
+`pins` job enforces both on every push, so a half-updated set cannot be merged.

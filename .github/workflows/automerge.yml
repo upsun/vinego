@@ -1,0 +1,48 @@
+name: automerge
+
+# Dependabot has no automerge of its own, and this repo has neither branch
+# protection nor GitHub's auto-merge setting enabled - so rather than merging
+# blind, this waits for the ci workflow to finish on the dependabot branch and
+# merges only when it succeeded. A failed build leaves the PR sitting open.
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    # head_repository + event guard: a fork can name a branch anything it likes,
+    # but it cannot produce a push event on this repository.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      (startsWith(github.event.workflow_run.head_branch, 'dependabot/') ||
+       startsWith(github.event.workflow_run.head_branch, 'automated/'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge the pull request
+        env:
+          # PAT, because the push to main that a merge produces would not
+          # trigger the release workflow if it were made with GITHUB_TOKEN.
+          GH_TOKEN: ${{ secrets.GH_PUBLISH_DEVREL }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          number="$(gh pr list --repo "$REPO" --head "$BRANCH" --state open \
+            --json number --jq '.[0].number // empty')"
+
+          if [ -z "$number" ]; then
+            echo "No open pull request for $BRANCH, nothing to merge."
+            exit 0
+          fi
+
+          gh pr merge "$number" --repo "$REPO" --squash --delete-branch
+          echo "Merged #${number} from \`${BRANCH}\`" >>"$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,67 @@
+name: release
+
+# Anything that lands on main and changes the image contents cuts the next
+# patch tag, which the ci workflow picks up to build and publish
+# ghcr.io/upsun/vinego. Renovate merges its own branches here, so a dependency
+# update becomes a released image with nothing to click.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+  workflow_dispatch:
+    inputs:
+      level:
+        description: "Which part of the version to bump"
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # needs the tag history to find the current version
+          # A tag pushed with the default GITHUB_TOKEN does not trigger other
+          # workflows, so ci would never publish the image. Hence the PAT.
+          token: ${{ secrets.GH_PUBLISH_DEVREL }}
+
+      - name: Tag the next version
+        env:
+          LEVEL: ${{ inputs.level || 'patch' }}
+        run: |
+          set -euo pipefail
+
+          latest="$(git tag --sort=-v:refname \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)"
+          if [ -z "$latest" ]; then
+            echo "::error::no vX.Y.Z tag to bump from"
+            exit 1
+          fi
+
+          IFS=. read -r major minor patch <<<"${latest#v}"
+          case "$LEVEL" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+            *) echo "::error::unknown level '$LEVEL'"; exit 1 ;;
+          esac
+          next="v${major}.${minor}.${patch}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$next" -m "$next" -m "$(git log -1 --pretty=%s)"
+          git push origin "$next"
+
+          echo "Released **$next** (was $latest) from \`$(git log -1 --pretty=%s)\`" \
+            >>"$GITHUB_STEP_SUMMARY"
