@@ -1,9 +1,11 @@
 name: automerge
 
-# Dependabot has no automerge of its own, and this repo has neither branch
-# protection nor GitHub's auto-merge setting enabled - so rather than merging
-# blind, this waits for the ci workflow to finish on the dependabot branch and
-# merges only when it succeeded. A failed build leaves the PR sitting open.
+# Dependabot and sync-pins pull requests merge themselves once ci is green.
+#
+# This waits on a workflow_run rather than using `gh pr merge --auto` because
+# auto-merge only holds for checks that branch protection marks as required,
+# and main has none - GitHub refuses to arm it ("pull request is in clean
+# status") and would merge immediately, build or no build.
 
 on:
   workflow_run:
