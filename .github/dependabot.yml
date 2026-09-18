@@ -1,0 +1,37 @@
+version: 2
+updates:
+  # go.mod / go.sum in src/. The `go` directive itself is not covered by
+  # Dependabot - the sync-pins workflow keeps that one in step.
+  - package-ecosystem: gomod
+    directory: /src
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+    groups:
+      go-deps:
+        patterns:
+          - "*"
+
+  # The `FROM golang:...` base images in src/Dockerfile.
+  - package-ecosystem: docker
+    directory: /src
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+    groups:
+      docker-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+    groups:
+      actions-deps:
+        patterns:
+          - "*"
