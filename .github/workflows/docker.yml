@@ -27,45 +27,32 @@ jobs:
           push: ${{ startsWith(github.ref, 'refs/tags/v') }}
           tags: ${{ steps.dockermeta.outputs.tags }}
 
-  # The version pins Dependabot has no manager for. Failing here keeps a
-  # half-updated set of pins from being merged by the automerge workflow.
+
+  # Dependabot has no manager for these, so nothing else would notice them
+  # drifting apart. Half-updated pins fail here and automerge leaves the PR.
   pins:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Check version pins for drift
+      - working-directory: src
         run: |
           set -uo pipefail
-
           fail=0
-          note() { echo "::error::$*"; echo "  DRIFT: $*" >&2; fail=1; }
+          bad() { echo "::error::$*"; fail=1; }
 
-          gcl_cfg="$(sed -nE 's|^version: (v[0-9]+\.[0-9]+\.[0-9]+)$|\1|p' src/.custom-gcl.yml | head -1)"
-          gcl_img="$(sed -nE 's|^RUN go install github\.com/golangci/golangci-lint.*@(v[0-9]+\.[0-9]+\.[0-9]+)$|\1|p' src/Dockerfile | head -1)"
-          go_mod="$(sed -nE 's|^go ([0-9]+\.[0-9]+).*$|\1|p' src/go.mod | head -1)"
-          mapfile -t images < <(sed -nE 's|^FROM golang:([0-9]+\.[0-9]+[^[:space:]]*).*$|\1|p' src/Dockerfile)
+          cfg=$(sed -nE 's|^version: (v[0-9.]+)$|\1|p' .custom-gcl.yml | head -1)
+          img=$(sed -nE 's|.*/golangci-lint@(v[0-9.]+)$|\1|p' Dockerfile | head -1)
+          gomod=$(sed -nE 's|^go ([0-9]+\.[0-9]+).*|\1|p' go.mod | head -1)
+          bases=$(sed -nE 's|^FROM golang:([^[:space:]]+).*|\1|p' Dockerfile | sort -u)
 
-          [ -n "$gcl_cfg" ] || note "no 'version: vX.Y.Z' in src/.custom-gcl.yml"
-          [ -n "$gcl_img" ] || note "no 'go install .../golangci-lint@vX.Y.Z' in src/Dockerfile"
-          [ -n "$go_mod" ]  || note "no 'go X.Y' directive in src/go.mod"
-          [ "${#images[@]}" -gt 0 ] || note "no 'FROM golang:X.Y' in src/Dockerfile"
-
-          if [ -n "$gcl_cfg" ] && [ -n "$gcl_img" ] && [ "$gcl_cfg" != "$gcl_img" ]; then
-            note "golangci-lint: .custom-gcl.yml says $gcl_cfg but Dockerfile installs $gcl_img"
+          for v in "$cfg" "$img" "$gomod" "$bases"; do
+            [ -n "$v" ] || bad "a version pin could not be read from src/"
+          done
+          [ "$cfg" = "$img" ] || bad "golangci-lint: .custom-gcl.yml has $cfg, Dockerfile installs $img"
+          [ "$(echo "$bases" | wc -l)" = 1 ] || bad "base images differ: $(echo $bases)"
+          if [ "$fail" = 0 ] && [ "$(printf '%s\n%s\n' "$gomod" "${bases%%-*}" | sort -V | tail -1)" != "${bases%%-*}" ]; then
+            bad "go.mod wants go $gomod but the base image is golang:${bases%%-*}"
           fi
 
-          if [ "${#images[@]}" -gt 0 ]; then
-            first="${images[0]}"
-            for img in "${images[@]}"; do
-              [ "$img" = "$first" ] || note "base images differ: golang:$first vs golang:$img"
-            done
-            img_minor="${first%%-*}"
-            if [ -n "$go_mod" ] && [ "$(printf '%s\n%s\n' "$go_mod" "$img_minor" | sort -V | tail -1)" != "$img_minor" ]; then
-              note "src/go.mod needs go $go_mod but the base image is only golang:$img_minor"
-            fi
-          fi
-
-          if [ "$fail" -eq 0 ]; then
-            echo "pins consistent: golangci-lint $gcl_cfg, go $go_mod on golang:${images[0]}"
-          fi
+          [ "$fail" = 0 ] && echo "pins consistent: golangci-lint $cfg, go $gomod on golang:$bases"
           exit "$fail"

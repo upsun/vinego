@@ -2,9 +2,7 @@ name: sync-pins
 
 # The pins Dependabot has no manager for: the golangci-lint version, which
 # lives in both src/.custom-gcl.yml and src/Dockerfile and must agree, and the
-# go directive in src/go.mod, which otherwise never follows the base image that
-# Dependabot does bump. Raises a pull request so the change goes through ci and
-# automerge exactly like a Dependabot one.
+# go directive in src/go.mod, which otherwise never follows the base image.
 
 on:
   schedule:
@@ -38,9 +36,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          # golangci-lint, written to both places in one go. The module path
-          # carries the major version, so a v2 -> v3 release moves that too; if
-          # upstream breaks the plugin API, ci fails and the PR stays open.
+          # The module path carries the major version, so a v2 -> v3 release
+          # moves that too; if it breaks the plugin API, ci fails and the PR stays.
           tag="$(gh api repos/golangci/golangci-lint/releases/latest --jq .tag_name)"
           major="${tag#v}"
           major="${major%%.*}"
@@ -51,7 +48,6 @@ jobs:
           sed -i -E "s|^version: v?[0-9].*$|version: ${tag}|" src/.custom-gcl.yml
           sed -i -E "s|^RUN go install github\.com/golangci/golangci-lint.*$|RUN go install ${module}/cmd/golangci-lint@${tag}|" src/Dockerfile
 
-          # The go directive follows whatever base image is pinned today.
           image="$(sed -nE 's|^FROM golang:([0-9]+\.[0-9]+).*$|\1|p' src/Dockerfile | head -1)"
           sed -i -E "s|^go [0-9]+\.[0-9]+(\.[0-9]+)?$|go ${image}|" src/go.mod
 
